@@ -1,35 +1,44 @@
 package com.fabioucb.features
 
-import io.ktor.server.application.*
+import io.ktor.http.*
 import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
 
-fun Application.configureSensorRoutes() {
-    routing {
-        route("/sensor") {
-            post {
-                val distance = call.receiveText().toIntOrNull() ?: -1
+fun Route.sensorRoutes() {
+    route("/sensor") {
+        get("/intervals") {
+            call.respondText("0,0.0,10.0;1,10.0,20.0;2,20.0,30.0;-1")
+        }
+
+        post {
+            try {
+                val distanceText = call.receiveText()
+                val distance = distanceText.toFloatOrNull()
+                    ?: throw IllegalArgumentException("Invalid distance format")
+
                 val interval = calculateInterval(distance)
 
-                // Aquí podrías enviar comandos a los actuadores
-                // basado en el intervalo detectado
-
-                call.respondText("Interval: $interval")
-            }
-
-            get("/intervals") {
-                call.respondText("0,0,10;1,10,20;2,20,30;-1")
+                call.respondText(
+                    text = "Interval: $interval",
+                    status = HttpStatusCode.OK
+                )
+            } catch (e: Exception) {
+                call.respondText(
+                    text = "Error: ${e.message}",
+                    status = HttpStatusCode.BadRequest
+                )
             }
         }
     }
 }
 
-private fun calculateInterval(distance: Int): Int {
+private fun calculateInterval(distance: Float): Int {
     return when {
-        distance in 0..10 -> 0
-        distance in 11..20 -> 1
-        distance in 21..30 -> 2
+        distance < 0 -> -1
+        distance <= 10.0f -> 0
+        distance <= 20.0f -> 1
+        distance <= 30.0f -> 2
         else -> -1
     }
 }

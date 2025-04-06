@@ -1,6 +1,6 @@
 package com.fabioucb.features
 
-import io.ktor.server.application.*
+import io.ktor.http.*
 import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
@@ -8,32 +8,59 @@ import io.ktor.server.websocket.*
 import io.ktor.websocket.*
 import kotlinx.coroutines.channels.consumeEach
 
-fun Application.configureActuatorRoutes() {
-    routing {
-        route("/actuator") {
-            post {
+fun Route.actuatorRoutes() {
+    route("/actuator") {
+        post {
+            try {
                 val command = call.receiveText()
-                // Ejemplo: "tled:1,yled:0,gled:1"
-                processActuatorCommand(command)
-                call.respondText("Command executed: $command")
-            }
+                validateCommand(command)
 
-            webSocket("/ws") {
+                println("Comando válido recibido: $command")
+                call.respondText(
+                    text = "Command processed: $command",
+                    status = HttpStatusCode.OK
+                )
+            } catch (e: Exception) {
+                call.respondText(
+                    text = "Error: ${e.message}",
+                    status = HttpStatusCode.BadRequest
+                )
+            }
+        }
+
+        webSocket("/ws") {
+            try {
                 send("Actuator WebSocket connected")
 
                 incoming.consumeEach { frame ->
                     if (frame is Frame.Text) {
                         val text = frame.readText()
-                        // Procesar comando y responder
+                        validateCommand(text)
                         send("ACK: $text")
                     }
                 }
+            } catch (e: Exception) {
+                close(CloseReason(CloseReason.Codes.PROTOCOL_ERROR, e.message ?: "Unknown error"))
             }
         }
     }
 }
 
-private fun processActuatorCommand(command: String) {
-    // Implementar lógica para controlar los LEDs
-    println("Processing actuator command: $command")
+private fun validateCommand(command: String) {
+    val parts = command.split(",")
+    if (parts.size != 3) {
+        throw IllegalArgumentException("Formato de comando inválido. Use 'tled:X,yled:Y,gled:Z'")
+    }
+
+    parts.forEach { part ->
+        val keyValue = part.split(":")
+        if (keyValue.size != 2 || !listOf("tled", "yled", "gled").contains(keyValue[0])) {
+            throw IllegalArgumentException("Formato de comando inválido en parte: $part")
+        }
+
+        val value = keyValue[1].toIntOrNull()
+        if (value == null || (value != 0 && value != 1)) {
+            throw IllegalArgumentException("Valor inválido (debe ser 0 o 1) en: $part")
+        }
+    }
 }
