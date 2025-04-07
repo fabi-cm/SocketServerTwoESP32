@@ -13,21 +13,23 @@ fun Route.sensorRoutes() {
 
         post {
             try {
-                val distanceText = call.receiveText()
-                val distance = distanceText.toFloatOrNull()
-                    ?: throw IllegalArgumentException("Invalid distance format")
+                val distance = call.receiveText().toFloatOrNull()
+                    ?: throw IllegalArgumentException("Formato de distancia inválido")
 
                 val interval = calculateInterval(distance)
+                val command = when(interval) {
+                    0 -> "tled:1,yled:0,gled:0"
+                    1 -> "tled:0,yled:1,gled:0"
+                    2 -> "tled:0,yled:0,gled:1"
+                    else -> "tled:0,yled:0,gled:0"
+                }
 
-                call.respondText(
-                    text = "Interval: $interval",
-                    status = HttpStatusCode.OK
-                )
+                // Actualiza el estado compartido
+                LedState.updateCommand(command)
+
+                call.respondText("Interval: $interval, Command: $command")
             } catch (e: Exception) {
-                call.respondText(
-                    text = "Error: ${e.message}",
-                    status = HttpStatusCode.BadRequest
-                )
+                call.respondText("Error: ${e.message}", status = HttpStatusCode.BadRequest)
             }
         }
     }

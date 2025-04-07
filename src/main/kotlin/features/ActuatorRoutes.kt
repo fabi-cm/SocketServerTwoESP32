@@ -8,59 +8,68 @@ import io.ktor.server.websocket.*
 import io.ktor.websocket.*
 import kotlinx.coroutines.channels.consumeEach
 
-fun Route.actuatorRoutes() {
-    route("/actuator") {
-        post {
-            try {
-                val command = call.receiveText()
-                validateCommand(command)
+// Objeto compartido para almacenar el estado
+object LedState {
+    var currentCommand = "tled:0,yled:0,gled:0"
+        private set
 
-                println("Comando válido recibido: $command")
-                call.respondText(
-                    text = "Command processed: $command",
-                    status = HttpStatusCode.OK
-                )
-            } catch (e: Exception) {
-                call.respondText(
-                    text = "Error: ${e.message}",
-                    status = HttpStatusCode.BadRequest
-                )
-            }
+    fun updateCommand(newCommand: String) {
+        if (validateCommandInternal(newCommand)) {
+            currentCommand = newCommand
         }
+    }
 
-        webSocket("/ws") {
-            try {
-                send("Actuator WebSocket connected")
+    fun validateCommandInternal(command: String): Boolean {
+        val parts = command.split(",")
+        if (parts.size != 3) return false
 
-                incoming.consumeEach { frame ->
-                    if (frame is Frame.Text) {
-                        val text = frame.readText()
-                        validateCommand(text)
-                        send("ACK: $text")
-                    }
-                }
-            } catch (e: Exception) {
-                close(CloseReason(CloseReason.Codes.PROTOCOL_ERROR, e.message ?: "Unknown error"))
+        return parts.all { part ->
+            when {
+                part == "tled:0" || part == "tled:1" -> true
+                part == "yled:0" || part == "yled:1" -> true
+                part == "gled:0" || part == "gled:1" -> true
+                else -> false
             }
         }
     }
 }
 
-private fun validateCommand(command: String) {
-    val parts = command.split(",")
-    if (parts.size != 3) {
-        throw IllegalArgumentException("Formato de comando inválido. Use 'tled:X,yled:Y,gled:Z'")
-    }
-
-    parts.forEach { part ->
-        val keyValue = part.split(":")
-        if (keyValue.size != 2 || !listOf("tled", "yled", "gled").contains(keyValue[0])) {
-            throw IllegalArgumentException("Formato de comando inválido en parte: $part")
+fun Route.actuatorRoutes() {
+    route("/actuator") {
+        get {
+            call.respondText(LedState.currentCommand)
         }
 
-        val value = keyValue[1].toIntOrNull()
-        if (value == null || (value != 0 && value != 1)) {
-            throw IllegalArgumentException("Valor inválido (debe ser 0 o 1) en: $part")
+        post {
+            try {
+                val command = call.receiveText()
+                if (!LedState.validateCommandInternal(command)) {
+                    throw IllegalArgumentException("Formato de comando inválido")
+                }
+                LedState.updateCommand(command)
+                call.respondText("Comando actualizado: $command")
+            } catch (e: Exception) {
+                call.respondText("Error: ${e.message}", status = HttpStatusCode.BadRequest)
+            }
+        }
+
+        webSocket("/ws") {
+            try {
+                send(LedState.currentCommand)
+                for (frame in incoming) {
+                    if (frame is Frame.Text) {
+                        val text = frame.readText()
+                        if (LedState.validateCommandInternal(text)) {
+                            LedState.updateCommand(text)
+                            send("ACK: $text")
+                        } else {
+                            send("ERROR: Comando inválido")
+                        }
+                    }
+                }
+            } catch (e: Exception) {
+                close(CloseReason(CloseReason.Codes.PROTOCOL_ERROR, e.message ?: "Error desconocido"))
+            }
         }
     }
 }
