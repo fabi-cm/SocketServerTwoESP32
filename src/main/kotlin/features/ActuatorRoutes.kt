@@ -6,7 +6,6 @@ import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import io.ktor.server.websocket.*
 import io.ktor.websocket.*
-import kotlinx.coroutines.channels.consumeEach
 
 // Objeto compartido para almacenar el estado
 object LedState {
@@ -24,10 +23,10 @@ object LedState {
         if (parts.size != 3) return false
 
         return parts.all { part ->
-            when {
-                part == "tled:0" || part == "tled:1" -> true
-                part == "yled:0" || part == "yled:1" -> true
-                part == "gled:0" || part == "gled:1" -> true
+            when (part) {
+                "tled:0", "tled:1" -> true
+                "yled:0", "yled:1" -> true
+                "gled:0", "gled:1" -> true
                 else -> false
             }
         }

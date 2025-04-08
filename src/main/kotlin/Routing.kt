@@ -10,7 +10,7 @@ fun Application.configureRoutes() {
     routing {
         sensorRoutes()
         actuatorRoutes()
-
+        ledThresholdRoutes()
         // Ruta de salud para pruebas
         get("/health") {
             call.respondText("Server is running")
