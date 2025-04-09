@@ -1,10 +1,11 @@
 val kotlin_version: String by project
 val logback_version: String by project
+val ktor_version: String by project
 
 plugins {
     kotlin("jvm") version "2.1.20"
     id("io.ktor.plugin") version "3.1.1"
-    kotlin("plugin.serialization") version "1.8.21"
+    kotlin("plugin.serialization") version "2.1.20"
 }
 
 group = "com.fabioucb"
@@ -34,4 +35,6 @@ dependencies {
     testImplementation("org.jetbrains.kotlin:kotlin-test-junit:$kotlin_version")
     implementation("io.ktor:ktor-serialization-kotlinx-json")
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json")
+    implementation("io.ktor:ktor-server-freemarker-jvm:$ktor_version")
+    implementation("io.ktor:ktor-server-resources:$ktor_version")
 }
