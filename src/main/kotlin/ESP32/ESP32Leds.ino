@@ -86,7 +86,6 @@ void checkForCommands() {
 }
 
 void processCommand(String command) {
-  // Versión más robusta de procesamiento
   int redState = command.indexOf("tled:1") != -1 ? HIGH : LOW;
   int yellowState = command.indexOf("yled:1") != -1 ? HIGH : LOW;
   int greenState = command.indexOf("gled:1") != -1 ? HIGH : LOW;

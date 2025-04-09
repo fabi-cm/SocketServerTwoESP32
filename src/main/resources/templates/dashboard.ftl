@@ -19,7 +19,7 @@
 
         <div class="dashboard-section">
             <div class="node-card">
-                <h2>Sensor Node (ESP32 @ 192.168.0.12)
+                <h2>Sensor ESP32 Dev Module
                     <span class="status-badge">[Status: ${statusIcon(sensorStatus)}
                         <#if sensorStatus>ON<#else>OFFLINE</#if>]</span>
                 </h2>
@@ -33,7 +33,7 @@
             </div>
 
             <div class="node-card">
-                <h2>Actuator Node (ESP32 @ 192.168.0.11)
+                <h2>Actuator ESP32 NodeMCU-32s
                     <span class="status-badge">[Status: ${statusIcon(actuatorStatus)}
                     <#if actuatorStatus>ON<#else>OFFLINE</#if>]</span>
                 </h2>

@@ -9,7 +9,7 @@ const int trigPin = 23;  // GPIO23
 const int echoPin = 22;  // GPIO22
 
 void setup() {
-  Serial.begin(115200); // Mejor usar 115200 para debugging
+  Serial.begin(115200);
 
   pinMode(trigPin, OUTPUT);
   pinMode(echoPin, INPUT);
